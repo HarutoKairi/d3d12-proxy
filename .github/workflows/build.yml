@@ -40,8 +40,20 @@ jobs:
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
       
+    - name: Build dxgi.dll (MinGW-w64)
+      run: >
+        sudo apt-get update && sudo apt-get install -y mingw-w64 && \
+        cd dxgi-proxy && \
+        x86_64-w64-mingw32-g++ -shared -o dxgi.dll dllmain.cpp pch.cpp -I. -static-libgcc -static-libstdc++ -Wl,--output-def,Source.def
+
     - uses: actions/upload-artifact@v2
       with:
         name: d3d12-proxy
         path: ${{ github.workspace }}\x64\Release\*.dll
+        if-no-files-found: error
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: dxgi-proxy
+        path: dxgi-proxy/dxgi.dll
         if-no-files-found: error
