@@ -3,7 +3,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Build dxgi.dll
+name: Build
 
 on:
   workflow_dispatch:
@@ -12,23 +12,21 @@ on:
   pull_request:
     branches: [ "master" ]
     
+env:
+  # Path to the solution file relative to the root of the project.
+  SOLUTION_FILE_PATH: .
+
+  # Configuration type to build.
+  # You can convert this to a build matrix if you need coverage of multiple configuration types.
+  # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+  BUILD_CONFIGURATION: Release
+
+permissions:
+  contents: read
+
 jobs:
   build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install MinGW-w64
-        run: sudo apt-get update && sudo apt-get install -y mingw-w64
-      - name: Build dxgi.dll
-        working-directory: dxgi-proxy
-        run: x86_64-w64-mingw32-g++ -shared -o dxgi.dll dllmain.cpp pch.cpp -I. -static-libgcc -static-libstdc++ -Wl,--output-def,Source.def
-      - name: Upload dxgi.dll artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: dxgi-proxy
-          path: dxgi-proxy/dxgi.dll
-          if-no-files-found: error
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v3
@@ -36,23 +34,14 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
 
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      # Add additional options to the MSBuild command line here (like platform or verbosity level).
+      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
       
-    - name: Build dxgi.dll (MinGW-w64)
-      run: >
-        sudo apt-get update && sudo apt-get install -y mingw-w64 && \
-        cd dxgi-proxy && \
-        x86_64-w64-mingw32-g++ -shared -o dxgi.dll dllmain.cpp pch.cpp -I. -static-libgcc -static-libstdc++ -Wl,--output-def,Source.def
-
-
-      - name: Upload dxgi.dll artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: dxgi-proxy
-          path: dxgi-proxy/dxgi.dll
-          if-no-files-found: error
-
     - uses: actions/upload-artifact@v2
       with:
-        name: dxgi-proxy
-        path: dxgi-proxy/dxgi.dll
+        name: d3d12-proxy
+        path: ${{ github.workspace }}\x64\Release\*.dll
         if-no-files-found: error
